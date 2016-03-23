@@ -12,8 +12,8 @@ public:
 
     static const ClassName name = KPort_Class;
 
-    KClientPort m_Client;
-    KServerPort m_Server;
+    KClientPort *m_Client;
+    KServerPort *m_Server;
     char m_Name[9]; //this is not like on the 3DS but we use it like that for debugging 
 private:
 };

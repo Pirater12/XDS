@@ -5,13 +5,16 @@
 //tools
 
 
-KSession::KSession(KPort * owner) : m_Server(this), m_Client(this)
+KSession::KSession(KPort * owner) : m_Server(new KServerSession(this)), m_Client(new KClientSession(this))
 {
     m_owner = owner;
+    m_Client->AcquireReference();
+    m_Server->AcquireReference();
 }
 KSession::~KSession()
 {
-
+    m_Client->ReleaseReference();
+    m_Server->ReleaseReference();
 }
 bool KSession::IsInstanceOf(ClassName name) {
     if (name == KSession::name)

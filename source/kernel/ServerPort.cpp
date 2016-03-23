@@ -24,7 +24,7 @@ KServerSession * KServerPort::AcceptSesion()
     m_sessionToTake.RemoveItem(m_sessionToTake.list);
     if (s == NULL)
         return NULL;
-    return &s->m_Server;
+    return s->m_Server;
 }
 
 bool KServerPort::IsInstanceOf(ClassName name) {

@@ -832,7 +832,7 @@ void ProcessSwi(u8 swi, u32 Reg[15], KThread * currentThread)
                     //found it
                     KClientSession* ses;
                     u32 hand;
-                    if (temp->data->m_Client.connect(ses) == Success)
+                    if (temp->data->m_Client->connect(ses) == Success)
                     {
                         s32 ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand, ses);
                         if (ret != Success)
@@ -1192,7 +1192,7 @@ void ProcessSwi(u8 swi, u32 Reg[15], KThread * currentThread)
         currentThread->m_owner->m_Kernel->m_Portlist.AddItem(port);
 
         u32 hand1 = 0;
-        s32 ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand1, &port->m_Server);
+        s32 ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand1, port->m_Server);
         if (ret != Success)
         {
             Reg[0] = SVCERROR_CREATE_HANLE;
@@ -1211,7 +1211,7 @@ void ProcessSwi(u8 swi, u32 Reg[15], KThread * currentThread)
             return;
         }
         u32 hand2 = 0;
-        ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand2, &port->m_Client);
+        ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand2, port->m_Client);
         if (ret != Success)
         {
             Reg[0] = SVCERROR_CREATE_HANLE;
@@ -1291,7 +1291,7 @@ void ProcessSwi(u8 swi, u32 Reg[15], KThread * currentThread)
         KSession* sesi = new KSession();
         u32 hand1,hand2;
 
-        s32 ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand1, &sesi->m_Server);
+        s32 ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand1, sesi->m_Server);
         if (ret != Success)
         {
             Reg[0] = SVCERROR_CREATE_HANLE;
@@ -1300,7 +1300,7 @@ void ProcessSwi(u8 swi, u32 Reg[15], KThread * currentThread)
 #endif
             return;
         }
-        ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand2, &sesi->m_Client);
+        ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand2, sesi->m_Client);
         if (ret != Success)
         {
             Reg[0] = SVCERROR_CREATE_HANLE;

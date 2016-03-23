@@ -12,14 +12,14 @@ s32 KClientPort::connect(KClientSession* &sesion)
     if ( m_maxConnection > m_CurrentConnection)
     {
         //free the server so he can accept the connection
-        KThread* found = m_owner->m_Server.SynGetNextPrio();
+        KThread* found = m_owner->m_Server->SynGetNextPrio();
         if (found)
         {
-            m_owner->m_Server.SynFree(0, found);
+            m_owner->m_Server->SynFree(0, found);
         }
         KSession* sesi = new KSession(m_owner);
-        m_owner->m_Server.m_sessionToTake.AddItem(sesi);
-        sesion = &sesi->m_Client;
+        m_owner->m_Server->m_sessionToTake.AddItem(sesi);
+        sesion = sesi->m_Client;
         return Success;
     }
     else

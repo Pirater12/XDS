@@ -14,8 +14,8 @@ public:
 
     static const ClassName name = KSession_Class;
 
-    KServerSession m_Server;
-    KClientSession m_Client;
+    KServerSession *m_Server;
+    KClientSession *m_Client;
     KPort * m_owner; //this is for debugging
     KLinkedList<u32> m_openMemAddr;
     KLinkedList<u32> m_openMemSize;
