@@ -834,6 +834,7 @@ void ProcessSwi(u8 swi, u32 Reg[15], KThread * currentThread)
                     u32 hand;
                     if (temp->data->m_Client->connect(ses) == Success)
                     {
+                        LOG("Process %s thread %u connected to %s", currentThread->m_owner->GetName(), currentThread->m_thread_id, temp->data->m_Name);
                         s32 ret = currentThread->m_owner->GetHandleTable()->CreateHandle(hand, ses);
                         if (ret != Success)
                         {
@@ -1149,6 +1150,17 @@ void ProcessSwi(u8 swi, u32 Reg[15], KThread * currentThread)
         LOG("Process %s thread %u GetResourceLimitCurrentValues (%08x %08x %08x %08x | %08x)", currentThread->m_owner->GetName(), currentThread->m_thread_id, values_ptr, handleResourceLimit, names_ptr, nameCount, Reg[0]);
 #endif
         return;
+    }
+    case 0x3C:
+    {
+        XDSERROR("Breakpoint called from %08x, R0: %08x", Reg[14], Reg[0]);
+        Reg[0] = 0xF8C007F4;//TODO the 3DS would terminate the Process if it is realy unknown but some are just stubs
+        if (swi == 0x3C)
+        {
+            fflush(stdout);
+            while (1);
+        }
+        break;
     }
 	case 0x3D:
 	{
