@@ -5,15 +5,15 @@
 /// Enumeration for defining the supported platforms
 #define PLATFORM_NULL 0
 #define PLATFORM_WINDOWS 1
-#define PLATFORM_LINUX 2
+#define PLATFORM_UNIX 2
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Platform detection
 #ifndef EMU_PLATFORM
 #if defined( __WIN32__ ) || defined( _WIN32 )
 #define EMU_PLATFORM PLATFORM_WINDOWS
-#elif defined(__linux__)
-#define EMU_PLATFORM PLATFORM_LINUX
+#elif defined(__linux__) || defined(__APPLE__)
+#define EMU_PLATFORM PLATFORM_UNIX
 #else
 #error unsupported platform
 #endif

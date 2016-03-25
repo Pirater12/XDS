@@ -27,6 +27,8 @@
 #include "cpu_detect.h"
 #include "emitter.h"
 
+#define assertf(cond, ...) assert(cond)
+
 namespace Gen
 {
 
@@ -168,7 +170,7 @@ const u8 *XEmitter::AlignCodePage()
 // causing a subtle JIT bug.
 void XEmitter::CheckFlags()
 {
-    assert(!flags_locked, "Attempt to modify flags while flags locked!");
+    assertf(!flags_locked, "Attempt to modify flags while flags locked!");
 }
 
 void XEmitter::WriteModRM(int mod, int reg, int rm)
@@ -202,16 +204,16 @@ void OpArg::WriteRex(XEmitter *emit, int opBits, int bits, int customOp) const
     {
         emit->Write8(op);
         // Check the operation doesn't access AH, BH, CH, or DH.
-        DEBUG_ASSERT((offsetOrBaseReg & 0x100) == 0);
-        DEBUG_ASSERT((customOp & 0x100) == 0);
+        DEBUG_assertf((offsetOrBaseReg & 0x100) == 0);
+        DEBUG_assertf((customOp & 0x100) == 0);
     }
 #else
-    assert(opBits != 64);
-	assert((customOp & 8) == 0 || customOp == -1);
-	assert((indexReg & 8) == 0);
-	assert((offsetOrBaseReg & 8) == 0);
-	assert(opBits != 8 || (customOp & 0x10c) != 4 || customOp == -1);
-	assert(scale == SCALE_ATREG || bits != 8 || (offsetOrBaseReg & 0x10c) != 4);
+    assertf(opBits != 64);
+	assertf((customOp & 8) == 0 || customOp == -1);
+	assertf((indexReg & 8) == 0);
+	assertf((offsetOrBaseReg & 8) == 0);
+	assertf(opBits != 8 || (customOp & 0x10c) != 4 || customOp == -1);
+	assertf(scale == SCALE_ATREG || bits != 8 || (offsetOrBaseReg & 0x10c) != 4);
 #endif
 }
 
@@ -259,7 +261,7 @@ void OpArg::WriteRest(XEmitter *emit, int extraBytes, X64Reg _operandReg,
 #ifdef ARCHITECTURE_x86_64
         u64 ripAddr = (u64)emit->GetCodePtr() + 4 + extraBytes;
         s64 distance = (s64)offset - (s64)ripAddr;
-        assert(
+        assertf(
                      (distance < 0x80000000LL &&
                       distance >=  -0x80000000LL) ||
                      !warn_64bit_offset,
@@ -364,7 +366,7 @@ void OpArg::WriteRest(XEmitter *emit, int extraBytes, X64Reg _operandReg,
         case SCALE_NOBASE_4: ss = 2; break;
         case SCALE_NOBASE_8: ss = 3; break;
         case SCALE_ATREG: ss = 0; break;
-		default: assert(0, "Invalid scale for SIB byte"); ss = 0; break;
+		default: assertf(0, "Invalid scale for SIB byte"); ss = 0; break;
         }
         emit->Write8((u8)((ss << 6) | ((ireg&7)<<3) | (_offsetOrBaseReg&7)));
     }
@@ -400,7 +402,7 @@ void XEmitter::JMP(const u8* addr, bool force5Bytes)
     if (!force5Bytes)
     {
         s64 distance = (s64)(fn - ((u64)code + 2));
-		assert(distance >= -0x80 && distance < 0x80,
+		assertf(distance >= -0x80 && distance < 0x80,
                  "Jump target too far away, needs force5Bytes = true");
         //8 bits will do
         Write8(0xEB);
@@ -410,7 +412,7 @@ void XEmitter::JMP(const u8* addr, bool force5Bytes)
     {
         s64 distance = (s64)(fn - ((u64)code + 5));
 
-		assert(
+		assertf(
                      distance >= -0x80000000LL && distance < 0x80000000LL,
                      "Jump target too far away, needs indirect register");
         Write8(0xE9);
@@ -421,7 +423,7 @@ void XEmitter::JMP(const u8* addr, bool force5Bytes)
 void XEmitter::JMPptr(const OpArg& arg2)
 {
     OpArg arg = arg2;
-	if (arg.IsImm()) assert(0, "JMPptr - Imm argument");
+	if (arg.IsImm()) assertf(0, "JMPptr - Imm argument");
     arg.operandReg = 4;
     arg.WriteRex(this, 0, 0);
     Write8(0xFF);
@@ -438,7 +440,7 @@ void XEmitter::JMPself()
 
 void XEmitter::CALLptr(OpArg arg)
 {
-	if (arg.IsImm()) assert(0, "CALLptr - Imm argument");
+	if (arg.IsImm()) assertf(0, "CALLptr - Imm argument");
     arg.operandReg = 2;
     arg.WriteRex(this, 0, 0);
     Write8(0xFF);
@@ -448,7 +450,7 @@ void XEmitter::CALLptr(OpArg arg)
 void XEmitter::CALL(const void* fnptr)
 {
     u64 distance = u64(fnptr) - (u64(code) + 5);
-    assert(
+    assertf(
                  distance < 0x0000000080000000ULL ||
                  distance >=  0xFFFFFFFF80000000ULL,
                  "CALL out of range (%p calls %p)", code, fnptr);
@@ -502,7 +504,7 @@ void XEmitter::J_CC(CCFlags conditionCode, const u8* addr, bool force5bytes)
     if (distance < -0x80 || distance >= 0x80 || force5bytes)
     {
         distance = (s64)(fn - ((u64)code + 6));
-        assert(
+        assertf(
                      distance >= -0x80000000LL && distance < 0x80000000LL,
                      "Jump target too far away, needs indirect register");
         Write8(0x0F);
@@ -521,13 +523,13 @@ void XEmitter::SetJumpTarget(const FixupBranch& branch)
     if (branch.type == 0)
     {
         s64 distance = (s64)(code - branch.ptr);
-		assert(distance >= -0x80 && distance < 0x80, "Jump target too far away, needs force5Bytes = true");
+		assertf(distance >= -0x80 && distance < 0x80, "Jump target too far away, needs force5Bytes = true");
         branch.ptr[-1] = (u8)(s8)distance;
     }
     else if (branch.type == 1)
     {
         s64 distance = (s64)(code - branch.ptr);
-		assert(distance >= -0x80000000LL && distance < 0x80000000LL, "Jump target too far away, needs indirect register");
+		assertf(distance >= -0x80000000LL && distance < 0x80000000LL, "Jump target too far away, needs indirect register");
         ((s32*)branch.ptr)[-1] = (s32)distance;
     }
 }
@@ -541,7 +543,7 @@ void XEmitter::RET_FAST()  {Write8(0xF3); Write8(0xC3);} //two-byte return (rep 
 // The first sign of decadence: optimized NOPs.
 void XEmitter::NOP(size_t size)
 {
-    assert((int)size > 0);
+    assertf((int)size > 0);
     while (true)
     {
         switch (size)
@@ -685,7 +687,7 @@ void XEmitter::PUSH(int bits, const OpArg& reg)
             Write32((u32)reg.offset);
             break;
         default:
-            assert(0, "PUSH - Bad imm bits");
+            assertf(0, "PUSH - Bad imm bits");
             break;
         }
     }
@@ -704,7 +706,7 @@ void XEmitter::POP(int /*bits*/, const OpArg& reg)
     if (reg.IsSimpleReg())
         POP(reg.GetSimpleReg());
     else
-        assert(0, "POP - Unsupported encoding");
+        assertf(0, "POP - Unsupported encoding");
 }
 
 void XEmitter::BSWAP(int bits, X64Reg reg)
@@ -723,7 +725,7 @@ void XEmitter::BSWAP(int bits, X64Reg reg)
     }
     else
     {
-        assert(0, "BSWAP - Wrong number of bits");
+        assertf(0, "BSWAP - Wrong number of bits");
     }
 }
 
@@ -737,7 +739,7 @@ void XEmitter::UD2()
 
 void XEmitter::PREFETCH(PrefetchLevel level, OpArg arg)
 {
-    assert(!arg.IsImm(), "PREFETCH - Imm argument");
+    assertf(!arg.IsImm(), "PREFETCH - Imm argument");
     arg.operandReg = (u8)level;
     arg.WriteRex(this, 0, 0);
     Write8(0x0F);
@@ -747,7 +749,7 @@ void XEmitter::PREFETCH(PrefetchLevel level, OpArg arg)
 
 void XEmitter::SETcc(CCFlags flag, OpArg dest)
 {
-    assert(!dest.IsImm(), "SETcc - Imm argument");
+    assertf(!dest.IsImm(), "SETcc - Imm argument");
     dest.operandReg = 0;
     dest.WriteRex(this, 0, 8);
     Write8(0x0F);
@@ -757,8 +759,8 @@ void XEmitter::SETcc(CCFlags flag, OpArg dest)
 
 void XEmitter::CMOVcc(int bits, X64Reg dest, OpArg src, CCFlags flag)
 {
-    assert(!src.IsImm(), "CMOVcc - Imm argument");
-    assert(bits != 8, "CMOVcc - 8 bits unsupported");
+    assertf(!src.IsImm(), "CMOVcc - Imm argument");
+    assertf(bits != 8, "CMOVcc - 8 bits unsupported");
     if (bits == 16)
         Write8(0x66);
     src.operandReg = dest;
@@ -770,7 +772,7 @@ void XEmitter::CMOVcc(int bits, X64Reg dest, OpArg src, CCFlags flag)
 
 void XEmitter::WriteMulDivType(int bits, OpArg src, int ext)
 {
-    assert(!src.IsImm(), "WriteMulDivType - Imm argument");
+    assertf(!src.IsImm(), "WriteMulDivType - Imm argument");
     CheckFlags();
     src.operandReg = ext;
     if (bits == 16)
@@ -796,7 +798,7 @@ void XEmitter::NOT(int bits, const OpArg& src)  {WriteMulDivType(bits, src, 2);}
 
 void XEmitter::WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2, bool rep)
 {
-    assert(!src.IsImm(), "WriteBitSearchType - Imm argument");
+    assertf(!src.IsImm(), "WriteBitSearchType - Imm argument");
     CheckFlags();
     src.operandReg = (u8)dest;
     if (bits == 16)
@@ -812,7 +814,7 @@ void XEmitter::WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2, bo
 void XEmitter::MOVNTI(int bits, const OpArg& dest, X64Reg src)
 {
     if (bits <= 16)
-        assert(0, "MOVNTI - bits<=16");
+        assertf(0, "MOVNTI - bits<=16");
     WriteBitSearchType(bits, src, dest, 0xC3);
 }
 
@@ -823,20 +825,20 @@ void XEmitter::TZCNT(int bits, X64Reg dest, const OpArg& src)
 {
     CheckFlags();
     if (!Common::GetCPUCaps().bmi1)
-        assert(0, "Trying to use BMI1 on a system that doesn't support it. Bad programmer.");
+        assertf(0, "Trying to use BMI1 on a system that doesn't support it. Bad programmer.");
     WriteBitSearchType(bits, dest, src, 0xBC, true);
 }
 void XEmitter::LZCNT(int bits, X64Reg dest, const OpArg& src)
 {
     CheckFlags();
     if (!Common::GetCPUCaps().lzcnt)
-        assert(0, "Trying to use LZCNT on a system that doesn't support it. Bad programmer.");
+        assertf(0, "Trying to use LZCNT on a system that doesn't support it. Bad programmer.");
     WriteBitSearchType(bits, dest, src, 0xBD, true);
 }
 
 void XEmitter::MOVSX(int dbits, int sbits, X64Reg dest, OpArg src)
 {
-    assert(!src.IsImm(), "MOVSX - Imm argument");
+    assertf(!src.IsImm(), "MOVSX - Imm argument");
     if (dbits == sbits)
     {
         MOV(dbits, R(dest), src);
@@ -869,7 +871,7 @@ void XEmitter::MOVSX(int dbits, int sbits, X64Reg dest, OpArg src)
 
 void XEmitter::MOVZX(int dbits, int sbits, X64Reg dest, OpArg src)
 {
-    assert(!src.IsImm(), "MOVZX - Imm argument");
+    assertf(!src.IsImm(), "MOVZX - Imm argument");
     if (dbits == sbits)
     {
         MOV(dbits, R(dest), src);
@@ -896,14 +898,14 @@ void XEmitter::MOVZX(int dbits, int sbits, X64Reg dest, OpArg src)
     }
     else
     {
-        assert(0, "MOVZX - Invalid size");
+        assertf(0, "MOVZX - Invalid size");
     }
     src.WriteRest(this);
 }
 
 void XEmitter::MOVBE(int bits, const OpArg& dest, const OpArg& src)
 {
-    assert(Common::GetCPUCaps().movbe, "Generating MOVBE on a system that does not support it.");
+    assertf(Common::GetCPUCaps().movbe, "Generating MOVBE on a system that does not support it.");
     if (bits == 8)
     {
         MOV(bits, dest, src);
@@ -915,28 +917,28 @@ void XEmitter::MOVBE(int bits, const OpArg& dest, const OpArg& src)
 
     if (dest.IsSimpleReg())
     {
-        assert(!src.IsSimpleReg() && !src.IsImm(), "MOVBE: Loading from !mem");
+        assertf(!src.IsSimpleReg() && !src.IsImm(), "MOVBE: Loading from !mem");
         src.WriteRex(this, bits, bits, dest.GetSimpleReg());
         Write8(0x0F); Write8(0x38); Write8(0xF0);
         src.WriteRest(this, 0, dest.GetSimpleReg());
     }
     else if (src.IsSimpleReg())
     {
-        assert(!dest.IsSimpleReg() && !dest.IsImm(), "MOVBE: Storing to !mem");
+        assertf(!dest.IsSimpleReg() && !dest.IsImm(), "MOVBE: Storing to !mem");
         dest.WriteRex(this, bits, bits, src.GetSimpleReg());
         Write8(0x0F); Write8(0x38); Write8(0xF1);
         dest.WriteRest(this, 0, src.GetSimpleReg());
     }
     else
     {
-        assert(0, "MOVBE: Not loading or storing to mem");
+        assertf(0, "MOVBE: Not loading or storing to mem");
     }
 }
 
 
 void XEmitter::LEA(int bits, X64Reg dest, OpArg src)
 {
-    assert(!src.IsImm(), "LEA - Imm argument");
+    assertf(!src.IsImm(), "LEA - Imm argument");
     src.operandReg = (u8)dest;
     if (bits == 16)
         Write8(0x66); //TODO: performance warning
@@ -952,11 +954,11 @@ void XEmitter::WriteShift(int bits, OpArg dest, const OpArg& shift, int ext)
     bool writeImm = false;
     if (dest.IsImm())
     {
-        assert(0, "WriteShift - can't shift imms");
+        assertf(0, "WriteShift - can't shift imms");
     }
     if ((shift.IsSimpleReg() && shift.GetSimpleReg() != ECX) || (shift.IsImm() && shift.GetImmBits() != 8))
     {
-        assert(0, "WriteShift - illegal argument");
+        assertf(0, "WriteShift - illegal argument");
     }
     dest.operandReg = ext;
     if (bits == 16)
@@ -1001,11 +1003,11 @@ void XEmitter::WriteBitTest(int bits, const OpArg& dest, const OpArg& index, int
     CheckFlags();
     if (dest.IsImm())
     {
-        assert(0, "WriteBitTest - can't test imms");
+        assertf(0, "WriteBitTest - can't test imms");
     }
     if ((index.IsImm() && index.GetImmBits() != 8))
     {
-        assert(0, "WriteBitTest - illegal argument");
+        assertf(0, "WriteBitTest - illegal argument");
     }
     if (bits == 16)
         Write8(0x66);
@@ -1036,15 +1038,15 @@ void XEmitter::SHRD(int bits, const OpArg& dest, const OpArg& src, const OpArg& 
     CheckFlags();
     if (dest.IsImm())
     {
-        assert(0, "SHRD - can't use imms as destination");
+        assertf(0, "SHRD - can't use imms as destination");
     }
     if (!src.IsSimpleReg())
     {
-        assert(0, "SHRD - must use simple register as source");
+        assertf(0, "SHRD - must use simple register as source");
     }
     if ((shift.IsSimpleReg() && shift.GetSimpleReg() != ECX) || (shift.IsImm() && shift.GetImmBits() != 8))
     {
-        assert(0, "SHRD - illegal shift");
+        assertf(0, "SHRD - illegal shift");
     }
     if (bits == 16)
         Write8(0x66);
@@ -1068,15 +1070,15 @@ void XEmitter::SHLD(int bits, const OpArg& dest, const OpArg& src, const OpArg& 
     CheckFlags();
     if (dest.IsImm())
     {
-        assert(0, "SHLD - can't use imms as destination");
+        assertf(0, "SHLD - can't use imms as destination");
     }
     if (!src.IsSimpleReg())
     {
-        assert(0, "SHLD - must use simple register as source");
+        assertf(0, "SHLD - must use simple register as source");
     }
     if ((shift.IsSimpleReg() && shift.GetSimpleReg() != ECX) || (shift.IsImm() && shift.GetImmBits() != 8))
     {
-        assert(0, "SHLD - illegal shift");
+        assertf(0, "SHLD - illegal shift");
     }
     if (bits == 16)
         Write8(0x66);
@@ -1112,7 +1114,7 @@ void OpArg::WriteNormalOp(XEmitter *emit, bool toRM, NormalOp op, const OpArg& o
     X64Reg _operandReg;
     if (IsImm())
     {
-        assert(0, "WriteNormalOp - Imm argument, wrong order");
+        assertf(0, "WriteNormalOp - Imm argument, wrong order");
     }
 
     if (bits == 16)
@@ -1126,7 +1128,7 @@ void OpArg::WriteNormalOp(XEmitter *emit, bool toRM, NormalOp op, const OpArg& o
 
         if (!toRM)
         {
-            assert(0, "WriteNormalOp - Writing to Imm (!toRM)");
+            assertf(0, "WriteNormalOp - Writing to Imm (!toRM)");
         }
 
         if (operand.scale == SCALE_IMM8 && bits == 8)
@@ -1202,7 +1204,7 @@ void OpArg::WriteNormalOp(XEmitter *emit, bool toRM, NormalOp op, const OpArg& o
         {
             if (scale)
             {
-                assert(0, "WriteNormalOp - MOV with 64-bit imm requres register destination");
+                assertf(0, "WriteNormalOp - MOV with 64-bit imm requres register destination");
             }
             // mov reg64, imm64
             else if (op == nrmMOV)
@@ -1211,11 +1213,11 @@ void OpArg::WriteNormalOp(XEmitter *emit, bool toRM, NormalOp op, const OpArg& o
                 emit->Write64((u64)operand.offset);
                 return;
             }
-            assert(0, "WriteNormalOp - Only MOV can take 64-bit imm");
+            assertf(0, "WriteNormalOp - Only MOV can take 64-bit imm");
         }
         else
         {
-            assert(0, "WriteNormalOp - Unhandled case");
+            assertf(0, "WriteNormalOp - Unhandled case");
         }
         _operandReg = (X64Reg)normalops[op].ext; //pass extension in REG of ModRM
     }
@@ -1249,7 +1251,7 @@ void OpArg::WriteNormalOp(XEmitter *emit, bool toRM, NormalOp op, const OpArg& o
         emit->Write32((u32)operand.offset);
         break;
     default:
-        assert(0, "WriteNormalOp - Unhandled case");
+        assertf(0, "WriteNormalOp - Unhandled case");
     }
 }
 
@@ -1258,7 +1260,7 @@ void XEmitter::WriteNormalOp(XEmitter *emit, int bits, NormalOp op, const OpArg&
     if (a1.IsImm())
     {
         //Booh! Can't write to an imm
-        assert(0, "WriteNormalOp - a1 cannot be imm");
+        assertf(0, "WriteNormalOp - a1 cannot be imm");
         return;
     }
     if (a2.IsImm())
@@ -1273,7 +1275,7 @@ void XEmitter::WriteNormalOp(XEmitter *emit, int bits, NormalOp op, const OpArg&
         }
         else
         {
-            assert(a2.IsSimpleReg() || a2.IsImm(), "WriteNormalOp - a1 and a2 cannot both be memory");
+            assertf(a2.IsSimpleReg() || a2.IsImm(), "WriteNormalOp - a1 and a2 cannot both be memory");
             a1.WriteNormalOp(emit, true, op, a2, bits);
         }
     }
@@ -1301,19 +1303,19 @@ void XEmitter::IMUL(int bits, X64Reg regOp, const OpArg& a1, const OpArg& a2)
     CheckFlags();
     if (bits == 8)
     {
-        assert(0, "IMUL - illegal bit size!");
+        assertf(0, "IMUL - illegal bit size!");
         return;
     }
 
     if (a1.IsImm())
     {
-        assert(0, "IMUL - second arg cannot be imm!");
+        assertf(0, "IMUL - second arg cannot be imm!");
         return;
     }
 
     if (!a2.IsImm())
     {
-        assert(0, "IMUL - third arg must be imm!");
+        assertf(0, "IMUL - third arg must be imm!");
         return;
     }
 
@@ -1344,7 +1346,7 @@ void XEmitter::IMUL(int bits, X64Reg regOp, const OpArg& a1, const OpArg& a2)
         }
         else
         {
-            assert(0, "IMUL - unhandled case!");
+            assertf(0, "IMUL - unhandled case!");
         }
     }
 }
@@ -1354,7 +1356,7 @@ void XEmitter::IMUL(int bits, X64Reg regOp, const OpArg& a)
     CheckFlags();
     if (bits == 8)
     {
-        assert(0, "IMUL - illegal bit size!");
+        assertf(0, "IMUL - illegal bit size!");
         return;
     }
 
@@ -1417,7 +1419,7 @@ static int GetVEXpp(u8 opPrefix)
 void XEmitter::WriteAVXOp(u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg, int extrabytes)
 {
     if (!Common::GetCPUCaps().avx)
-        assert(0, "Trying to use AVX on a system that doesn't support it. Bad programmer.");
+        assertf(0, "Trying to use AVX on a system that doesn't support it. Bad programmer.");
     int mmmmm = GetVEXmmmmm(op);
     int pp = GetVEXpp(opPrefix);
     // FIXME: we currently don't support 256-bit instructions, and "size" is not the vector size here
@@ -1430,7 +1432,7 @@ void XEmitter::WriteAVXOp(u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, con
 void XEmitter::WriteVEXOp(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, const OpArg& arg, int extrabytes)
 {
     if (size != 32 && size != 64)
-        assert(0, "VEX GPR instructions only support 32-bit and 64-bit modes!");
+        assertf(0, "VEX GPR instructions only support 32-bit and 64-bit modes!");
     int mmmmm = GetVEXmmmmm(op);
     int pp = GetVEXpp(opPrefix);
     arg.WriteVex(this, regOp1, regOp2, 0, pp, mmmmm, size == 64);
@@ -1442,7 +1444,7 @@ void XEmitter::WriteBMI1Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg 
 {
     CheckFlags();
     if (!Common::GetCPUCaps().bmi1)
-        assert(0, "Trying to use BMI1 on a system that doesn't support it. Bad programmer.");
+        assertf(0, "Trying to use BMI1 on a system that doesn't support it. Bad programmer.");
     WriteVEXOp(size, opPrefix, op, regOp1, regOp2, arg, extrabytes);
 }
 
@@ -1450,7 +1452,7 @@ void XEmitter::WriteBMI2Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg 
 {
     CheckFlags();
     if (!Common::GetCPUCaps().bmi2)
-        assert(0, "Trying to use BMI2 on a system that doesn't support it. Bad programmer.");
+        assertf(0, "Trying to use BMI2 on a system that doesn't support it. Bad programmer.");
     WriteVEXOp(size, opPrefix, op, regOp1, regOp2, arg, extrabytes);
 }
 
@@ -1504,7 +1506,7 @@ void XEmitter::MOVQ_xmm(OpArg arg, X64Reg src)
 void XEmitter::WriteMXCSR(OpArg arg, int ext)
 {
     if (arg.IsImm() || arg.IsSimpleReg())
-        assert(0, "MXCSR - invalid operand");
+        assertf(0, "MXCSR - invalid operand");
 
     arg.operandReg = ext;
     arg.WriteRex(this, 0, 0);
@@ -1735,14 +1737,14 @@ void XEmitter::PSRAD(X64Reg reg, int shift)
 void XEmitter::WriteSSSE3Op(u8 opPrefix, u16 op, X64Reg regOp, const OpArg& arg, int extrabytes)
 {
     if (!Common::GetCPUCaps().ssse3)
-        assert(0, "Trying to use SSSE3 on a system that doesn't support it. Bad programmer.");
+        assertf(0, "Trying to use SSSE3 on a system that doesn't support it. Bad programmer.");
     WriteSSEOp(opPrefix, op, regOp, arg, extrabytes);
 }
 
 void XEmitter::WriteSSE41Op(u8 opPrefix, u16 op, X64Reg regOp, const OpArg& arg, int extrabytes)
 {
     if (!Common::GetCPUCaps().sse4_1)
-        assert(0, "Trying to use SSE4.1 on a system that doesn't support it. Bad programmer.");
+        assertf(0, "Trying to use SSE4.1 on a system that doesn't support it. Bad programmer.");
     WriteSSEOp(opPrefix, op, regOp, arg, extrabytes);
 }
 
@@ -1956,13 +1958,13 @@ void XEmitter::FWAIT()
 void XEmitter::WriteFloatLoadStore(int bits, FloatOp op, FloatOp op_80b, const OpArg& arg)
 {
     int mf = 0;
-    assert(!(bits == 80 && op_80b == floatINVALID), "WriteFloatLoadStore: 80 bits not supported for this instruction");
+    assertf(!(bits == 80 && op_80b == floatINVALID), "WriteFloatLoadStore: 80 bits not supported for this instruction");
     switch (bits)
     {
     case 32: mf = 0; break;
     case 64: mf = 4; break;
     case 80: mf = 2; break;
-    default: assert(0, "WriteFloatLoadStore: invalid bits (should be 32/64/80)");
+    default: assertf(0, "WriteFloatLoadStore: invalid bits (should be 32/64/80)");
     }
     Write8(0xd9 | mf);
     // x87 instructions use the reg field of the ModR/M byte as opcode:

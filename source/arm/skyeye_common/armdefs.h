@@ -33,7 +33,7 @@
 #include "arm/skyeye_common/armmmu.h"
 #include "arm/skyeye_common/skyeye_defs.h"
 
-#if EMU_PLATFORM == PLATFORM_LINUX
+#if EMU_PLATFORM == PLATFORM_UNIX
 #include <sys/time.h>
 #include <unistd.h>
 #endif

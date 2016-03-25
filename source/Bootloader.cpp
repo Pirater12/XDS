@@ -508,7 +508,7 @@ int Boot(KKernel* kernel)
 		fclose(fd);
 		return 0; //it worked
 	}
-    fclose(fd);
+    if (fd) fclose(fd);
     XDSERROR("finding .firm section");
     return -1;
     XDSERROR("finding firm");

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cassert>
 
 #include "citraimport/common/color.h"
 #include "citraimport/common/common_types.h"

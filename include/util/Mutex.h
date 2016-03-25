@@ -1,6 +1,6 @@
 #include "Platform.h"
 
-#if EMU_PLATFORM == PLATFORM_LINUX
+#if EMU_PLATFORM == PLATFORM_UNIX
 #include <pthread.h>
 #elif EMU_PLATFORM == PLATFORM_WINDOWS
 #include <windows.h>
@@ -17,7 +17,7 @@ public:
 private:
     bool m_locked;
 
-#if EMU_PLATFORM == PLATFORM_LINUX
+#if EMU_PLATFORM == PLATFORM_UNIX
     pthread_mutex_t m_mutex;
 #elif EMU_PLATFORM == PLATFORM_WINDOWS
     HANDLE m_mutex;

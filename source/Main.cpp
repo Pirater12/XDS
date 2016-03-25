@@ -35,10 +35,11 @@ int main(int argc, char* argv[]) {
     Mem_Init(false);
     Mem_SharedMemInit();
 
-	Boot(mykernel);
-
+	if (Boot(mykernel) == 0)
+  {
     //kernel->AddQuickCodeProcess(&code[0], size);
     mykernel->ThreadsRunTemp();
+  }
     return 0;
 }
 extern "C" void citraFireInterrupt(int id)

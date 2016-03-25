@@ -286,7 +286,7 @@ inline OpArg SImmAuto(s32 imm) {
 #ifdef _ARCH_64
 inline OpArg ImmPtr(const void* imm) {return Imm64((u64)imm);}
 #else
-inline OpArg ImmPtr(const void* imm) {return Imm32((u32)imm);}
+inline OpArg ImmPtr(const void* imm) {return Imm32((u32)(u64)imm);}
 #endif
 
 inline u32 PtrOffset(const void* ptr, const void* base)
@@ -302,7 +302,7 @@ inline u32 PtrOffset(const void* ptr, const void* base)
 
     return (u32)distance;
 #else
-    return (u32)ptr-(u32)base;
+    return (u32)(u64)ptr-(u32)(u64)base;
 #endif
 }
 

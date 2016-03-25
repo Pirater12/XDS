@@ -27,11 +27,11 @@
 
 #include "citraimport/settings.h"
 
-#include "citraimport/GPU\video_core/pica.h"
-#include "citraimport/GPU\video_core/renderer_base.h"
-#include "citraimport/GPU\video_core/utils.h"
-#include "citraimport/GPU\video_core/video_core.h"
-#include "citraimport/GPU\video_core/debug_utils/debug_utils.h"
+#include "citraimport/GPU/video_core/pica.h"
+#include "citraimport/GPU/video_core/renderer_base.h"
+#include "citraimport/GPU/video_core/utils.h"
+#include "citraimport/GPU/video_core/video_core.h"
+#include "citraimport/GPU/video_core/debug_utils/debug_utils.h"
 
 using nihstro::DVLBHeader;
 using nihstro::DVLEHeader;

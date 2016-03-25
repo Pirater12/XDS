@@ -1,5 +1,6 @@
 #pragma once 
 
+#undef PRIO_MAX
 
 #define PRIO_FIELD_COUNT    0x20
 #define PRIO_FIELD_MASK     0x1F
