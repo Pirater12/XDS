@@ -1,8 +1,8 @@
 #include "Kernel.h"
 #include "Hardware.h"
 
-
 extern "C" int citraPressedkey;
+
 HID::HID(KKernel * kernel) : m_kernel(kernel), m_IO(0), m_DIR(0)
 {
 }
