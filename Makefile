@@ -16,9 +16,12 @@ LDFLAGS := -L/opt/local/lib -Lexternal/gl3w -lpthread -lX11 -lXxf86vm -lXrender 
 
 COMMON_FILES := $(patsubst %.cpp,%.o,$(patsubst %.c,%.o,$(SOURCE_FILES)))
 
-xds: $(COMMON_FILES) source/Main.cpp
+xds: deps $(COMMON_FILES) source/Main.cpp
 	echo $(COMMON_FILES)
 	g++ -o xds $(TEST_DEFS) $(BUILD_FLAGS) $(COMMON_FILES) $(LDFLAGS)
+
+deps:
+	cd external/gl3w && ./gl3w_gen.py && CFLAGS= CXXFLAGS= LDFLAGS= cmake . && make
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
