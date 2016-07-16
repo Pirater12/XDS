@@ -1,4 +1,4 @@
-#!/bin/python
+#!/usr/bin/env python
 import glob
 import os
 import sys
@@ -15,7 +15,7 @@ def main():
     if not os.path.exists(outdir):
       os.makedirs(outdir)
     cia = os.path.join(sys.argv[1], i)
-    os.system("./ctrtool --tmd=" + outdir + "/00000000.tmd --contents=" + outdir + "/contents '" + cia + "'")
+    os.system("ctrtool --tmd=" + outdir + "/00000000.tmd --contents=" + outdir + "/contents '" + cia + "'")
     items = glob.glob(outdir + '/contents.*')
     for item in items:
       cid = item[-8:]
