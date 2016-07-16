@@ -4,9 +4,8 @@
 
 #include "Bootloader.h"
 
-//they are in mem in that order fs loader pm sm pix
-
-
+// they are in mem in that order fs loader pm sm pix
+// FIXME ^ Not necessarily true, assumption (@chaoskagami)
 
 //tools
 static u32 Read32revers(uint8_t p[4])
@@ -120,7 +119,7 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
 
     if (fseek(fd, offset, SEEK_SET) != 0)
     {
-        XDSERROR("failed to seek.");
+        XDSERROR("Failed to seek to origin in file. Handle valid?");
         return NULL;
     }
 
@@ -130,19 +129,19 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
 
     // Read header.
     if (fread(&loader_h, sizeof(loader_h), 1, fd) != 1) {
-        XDSERROR("failed to read header.");
+        XDSERROR("Failed to read header from file.");
         return NULL;
     }
 
     // Load NCCH
     if (memcmp(&loader_h.magic, "NCCH", 4) != 0) {
-        XDSERROR("invalid magic.. wrong file?");
+        XDSERROR("Invalid magic. Is this an NCCH?");
         return NULL;
     }
 
     // Read Exheader.
     if (fread(&ex, sizeof(ex), 1, fd) != 1) {
-        XDSERROR("failed to read exheader.");
+        XDSERROR("Failed to read exheader.");
         return NULL;
     }
 
@@ -156,13 +155,13 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
 
     if (fseek(fd, exefs_off + ncch_off + offset, SEEK_SET) != 0)
     {
-        XDSERROR("failed to seek.");
+        XDSERROR("Failed to seek to offset of ExeFs.");
         return NULL;
     }
 
     exefs_header eh;
     if (fread(&eh, sizeof(eh), 1, fd) != 1) {
-        XDSERROR("failed to read ExeFS header.");
+        XDSERROR("Failed to read ExeFS header.");
         return NULL;
     }
 
@@ -179,18 +178,18 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
             sec_off += exefs_off + sizeof(eh);
             if (fseek(fd, sec_off + ncch_off + offset, SEEK_SET) != 0)
             {
-                XDSERROR("failed to seek.");
+                XDSERROR("Failed to seek to .code offset.");
                 return NULL;
             }
 
             u8* sec = (u8*)malloc(AlignPage(sec_size));
             if (sec == NULL) {
-                XDSERROR("section malloc failed.");
+                XDSERROR("Failed to allocate memory for section.");
                 return NULL;
             }
 
             if (fread(sec, sec_size, 1, fd) != 1) {
-                XDSERROR("section fread failed.");
+                XDSERROR("Failed to read section to memory.");
                 free(sec);
                 return NULL;
             }
@@ -202,7 +201,7 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
                 u8* dec = (u8*)malloc(AlignPage(dec_size));
 
                 if (!dec) {
-                    XDSERROR("decompressed data block allocation failed.");
+                    XDSERROR("Failed to allocate memory for decompression.");
                     free(sec);
                     return NULL;
                 }
@@ -210,7 +209,7 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
                 u32 firmexpected = Read32(ex.codesetinfo.text.codesize) + Read32(ex.codesetinfo.ro.codesize) + Read32(ex.codesetinfo.data.codesize);
 
                 if (Decompress(sec, sec_size, dec, dec_size) == 0) {
-                    XDSERROR("section decompression failed.");
+                    XDSERROR("Decompression of .code failed.");
                     free(sec);
                     free(dec);
                     return NULL;
@@ -234,7 +233,7 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
             u32 codesize = AlignPage(realcodesize);
             u8* code = (u8*)malloc(codesize);
             if (!code) {
-                XDSERROR("text data block allocation failed.");
+                XDSERROR("Text segment allocation failed.");
                 free(sec);
                 return NULL;
             }
@@ -245,7 +244,7 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
             u32 rodatasize = AlignPage(realrodatasize);
             u8* rodata = (u8*)malloc(rodatasize);
             if (!rodata) {
-                XDSERROR("rodata data block allocation failed.");
+                XDSERROR("ROData segment allocation failed.");
                 free(code);
                 free(sec);
                 return NULL;
@@ -257,7 +256,7 @@ KProcess* Boot_LoadFileFast(FILE* fd, u32 offset, u32* out_offset, KKernel * Ker
             u32 datasize = AlignPage(realdatasize);
             u8* data = (u8*)malloc(datasize);
             if (!data) {
-                XDSERROR("data data block allocation failed.");
+                XDSERROR("Data segment allocation failed.");
                 free(code);
                 free(sec);
                 free(rodata);
@@ -321,7 +320,7 @@ FILE* openapp(u32 titlehigh, u32 titlelow) //used by pm
             u8 temp[4];
             if (fread(temp, 4, 1, fd) != 1)
             {
-                XDSERROR("reading tmd Signature Type");
+                XDSERROR("Failed to retrieve signature type from TMD.");
                 return NULL;
             }
             u32 Signature_Type = Read32revers(temp);
@@ -347,18 +346,18 @@ FILE* openapp(u32 titlehigh, u32 titlelow) //used by pm
                 y = 0x80;
                 break;
             default:
-                LOG("unknown Signature Type fallback");
+                LOG("Warning: Signature type is unknown. Falling back to 0x140.");
                 y = 0x140;
                 break;
             }
             if (fseek(fd, y + 0x9C4, SEEK_SET) != 0)
             {
-                XDSERROR("reading tmd Signature Type");
+                XDSERROR("Failed to retrieve signature type from TMD.");
                 return NULL;
             }
             if (fread(temp, 4, 1, fd) != 1)
             {
-                XDSERROR("reading tmd Signature Type");
+                XDSERROR("Failed to retrieve signature type from TMD.");
                 return NULL;
             }
             u32 index = Read32revers(temp);
@@ -372,7 +371,7 @@ FILE* openapp(u32 titlehigh, u32 titlelow) //used by pm
             fd = fopen(string, "rb");
             if (fd == NULL)
             {
-                XDSERROR("opening the container %s", string);
+                XDSERROR("Failed to open app container: `%s`", string);
                 return NULL;
             }
             return fd;
@@ -397,18 +396,18 @@ s64 FindRomFSOffset(FILE* fd, char* name, u64 &out_size, u8* hash_out)
 
 	// Read header.
 	if (fread(&loader_h, sizeof(loader_h), 1, fd) != 1) {
-		XDSERROR("failed to read header.");
+		XDSERROR("Failed to read header.");
 		return -1;
 	}
 	// Load NCCH
 	if (memcmp(&loader_h.magic, "NCCH", 4) != 0) {
-		XDSERROR("invalid magic.. wrong file?");
+		XDSERROR("Invalid magic. Is this an NCCH file?");
 		return -1;
 	}
 
 	// Read Exheader.
 	if (fread(&ex, sizeof(ex), 1, fd) != 1) {
-		XDSERROR("failed to read exheader.");
+		XDSERROR("Failed to read exheader.");
 		return -1;
 	}
 
@@ -436,18 +435,18 @@ s64 FindTableOffset(FILE* fd,char* name,u64 &out_size, u8* hash_out)
 
 	// Read header.
 	if (fread(&loader_h, sizeof(loader_h), 1, fd) != 1) {
-		XDSERROR("failed to read header.");
+		XDSERROR("Failed to read header.");
 		return -1;
 	}
 	// Load NCCH
 	if (memcmp(&loader_h.magic, "NCCH", 4) != 0) {
-		XDSERROR("invalid magic.. wrong file?");
+		XDSERROR("Invalid magic. Is this an NCCH file?");
 		return -1;
 	}
 
 	// Read Exheader.
 	if (fread(&ex, sizeof(ex), 1, fd) != 1) {
-		XDSERROR("failed to read exheader.");
+		XDSERROR("Failed to read exheader.");
 		return -1;
 	}
 
@@ -457,13 +456,13 @@ s64 FindTableOffset(FILE* fd,char* name,u64 &out_size, u8* hash_out)
 
 	if (fseek(fd, exefs_off + ncch_off, SEEK_SET) != 0)
 	{
-		XDSERROR("failed to seek.");
+		XDSERROR("Failed to seek.");
 		return -2;
 	}
 
 	exefs_header eh;
 	if (fread(&eh, sizeof(eh), 1, fd) != 1) {
-		XDSERROR("failed to read ExeFS header.");
+		XDSERROR("Failed to read ExeFS header.");
 		return -1;
 	}
 
@@ -487,20 +486,22 @@ s64 FindTableOffset(FILE* fd,char* name,u64 &out_size, u8* hash_out)
 			return exefs_off + sizeof(eh) + sec_off;
 		}
 	}
-	XDSERROR("finding section");
+	XDSERROR("Finding section");
 	return -1;
 }
 
 int Boot(KKernel* kernel)
 {
-    FILE* fd = openapp(0x00040138, 0x00000002);//this is firm
+    FILE* fd = openapp(0x00040138, 0x00000002); //this is firm
     //open the firm to extrect the core modules
 	u64 temp;
 	s64 sec_off = FindTableOffset(fd, ".firm", temp, NULL);
     u32 out_offset;
 	if (sec_off > 0)
 	{
-		KProcess* process = Boot_LoadFileFast(fd, sec_off + 0x200, &out_offset, kernel);//The first is most likely the NCCH container but that may change I don't know how to detect the correct container so I just do it by a static offset TODO
+		// TODO - The first is most likely the NCCH container but that may change
+		//        I don't know how to detect the correct container so I just do it by a static offset
+		KProcess* process = Boot_LoadFileFast(fd, sec_off + 0x200, &out_offset, kernel);
 		for (int j = 0; j < 4; j++) //boot all 5
 		{
 			process = Boot_LoadFileFast(fd, (out_offset + 0x1FF)&~0x1FF, &out_offset, kernel);
@@ -508,10 +509,8 @@ int Boot(KKernel* kernel)
 		fclose(fd);
 		return 0; //it worked
 	}
-    if (fd) fclose(fd);
-    XDSERROR("finding .firm section");
+    if (fd)
+		fclose(fd);
+    XDSERROR("Failed to boot. Couldn't load FIRM. Do you have NAND files?");
     return -1;
-    XDSERROR("finding firm");
-    return -1;
-
 }

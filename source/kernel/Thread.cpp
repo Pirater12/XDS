@@ -16,11 +16,13 @@ KThread::KThread(s32 core, KProcess *owner) : m_running(true)
     Threadwaitlist = NULL;
     m_corenumb = core;
 }
+
 void KThread::stop()
 {
 	SynFreeAll(0);
 	m_running = false;
 }
+
 void KThread::trigger_event()
 {
 	KLinkedListNode<KTimeedEvent> *t = m_owner->m_Kernel->m_Timedevent.list;
@@ -32,6 +34,7 @@ void KThread::trigger_event()
 	}
 	SynFree(0, this);//the system is waiting for itself so free it
 }
+
 bool KThread::IsInstanceOf(ClassName name) {
     if (name == KThread::name)
         return true;
@@ -58,6 +61,7 @@ void KThread::SyncStall(KLinkedList<KSynchronizationObject>* objects, bool waitA
         {
             current = current->next;
         }
+
 		while (current != NULL) //check if this is correct but it looks like it is TODO
 		{
 			if (current->data->m_killed == true)
@@ -78,7 +82,7 @@ void KThread::SyncStall(KLinkedList<KSynchronizationObject>* objects, bool waitA
 			sorce++;
 			current = current->prev;
 		}
-		
+
 		m_waitAll = waitAll;
         m_owner->m_Kernel->ReScheduler();
 

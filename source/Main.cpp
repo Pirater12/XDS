@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 }
 extern "C" void citraFireInterrupt(int id)
 {
-	LOG("cirta fire %02x",id);
+	LOG("Citra core fired interrupt %02x",id);
 	mykernel->FireInterrupt(id);
 }
 bool novideo = true;

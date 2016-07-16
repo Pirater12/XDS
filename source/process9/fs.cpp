@@ -413,7 +413,7 @@ void P9FS::Command(u32 data[], u32 numb)
 			case 0x1234567c: // SystemSaveData
 				a->Archobj = new Archive1234567c(this->m_owner, lowpath);
 				break;
-			case 0x1234567d: // NAND RW 
+			case 0x1234567d: // NAND RW
 				a->Archobj = new Archive1234567d(this->m_owner, lowpath);
 				break;
 			case 0x1234567e: // NAND RO
